@@ -1,8 +1,8 @@
 import os
-import base64
 import json
 import urllib.request
 import urllib.parse
+import base64
 
 # Configurações do Keycloak
 KEYCLOAK_URL = os.getenv('KEYCLOAK_BASE_URL')
@@ -19,17 +19,10 @@ def lambda_handler(event, context):
     token_valid = introspect_token(access_token)
     
     if token_valid:
-        # Decodifica o token para extrair 'custom:cnpj' sem adicionar funções adicionais
-        # O token JWT é base64url encoded, então decodifique a parte do payload para obter as claims
-        split_token = access_token.split('.')
-        payload = split_token[1]
-        payload += '=' * (4 - len(payload) % 4)  # Padding para base64
-        decoded_payload = base64.urlsafe_b64decode(payload).decode('utf-8')
-        claims = json.loads(decoded_payload)
-        cnpj = claims.get('custom:cnpj')
-        
+        # Decodifica o token para extrair custom:cnpj
+        claims = decode_jwt(access_token)
+        cnpj = claims.get("custom:cnpj", None)
         if cnpj:
-            # Inclui 'custom:cnpj' no contexto da política
             return generate_policy('user', "Allow", event["methodArn"], {'customCNPJ': cnpj})
         else:
             print("CNPJ not found in token claims.")
@@ -51,6 +44,15 @@ def introspect_token(token):
     except urllib.error.URLError as e:
         print(f"Error during token introspection: {e.reason}")
         return False
+
+def decode_jwt(token):
+    # Extrai apenas o payload do JWT
+    payload_base64 = token.split('.')[1]
+    padding = len(payload_base64) % 4
+    if padding > 0:
+        payload_base64 += '=' * (4 - padding)
+    decoded_payload = base64.urlsafe_b64decode(payload_base64).decode('utf-8')
+    return json.loads(decoded_payload)
 
 def generate_policy(principal_id, effect, resource, context={}):
     auth_response = {
