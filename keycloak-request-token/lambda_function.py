@@ -10,12 +10,6 @@ def get_parameter(name, with_decryption=False):
     response = ssm.get_parameter(Name=name, WithDecryption=with_decryption)
     return response['Parameter']['Value']
 
-# Configurações do Keycloak
-# KEYCLOAK_URL = os.getenv('KEYCLOAK_BASE_URL')
-# KEYCLOAK_REALM = os.getenv('KEYCLOAK_REALM_NAME')
-# KEYCLOAK_CLIENT_ID = os.getenv('KEYCLOAK_CLIENT_ID')
-# KEYCLOAK_CLIENT_SECRET = os.getenv('KEYCLOAK_CLIENT_SECRET')
-
 KEYCLOAK_URL = get_parameter('/keycloak/nhub/base_url')
 KEYCLOAK_REALM = get_parameter('/keycloak/nhub/realm_name')
 KEYCLOAK_CLIENT_ID = get_parameter('/keycloak/nhub/client_id')
