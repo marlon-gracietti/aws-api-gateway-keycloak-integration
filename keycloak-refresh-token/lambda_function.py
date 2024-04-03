@@ -9,12 +9,6 @@ def get_parameter(name, with_decryption=False):
     response = ssm.get_parameter(Name=name, WithDecryption=with_decryption)
     return response['Parameter']['Value']
 
-# Configurações do Keycloak
-# KEYCLOAK_URL = os.getenv('KEYCLOAK_BASE_URL')
-# KEYCLOAK_REALM = os.getenv('KEYCLOAK_REALM_NAME')
-# KEYCLOAK_CLIENT_ID = os.getenv('KEYCLOAK_CLIENT_ID')
-# KEYCLOAK_CLIENT_SECRET = os.getenv('KEYCLOAK_CLIENT_SECRET')
-
 KEYCLOAK_URL = get_parameter('/keycloak/nhub/base_url')
 KEYCLOAK_REALM = get_parameter('/keycloak/nhub/realm_name')
 KEYCLOAK_CLIENT_ID = get_parameter('/keycloak/nhub/client_id')
@@ -23,7 +17,6 @@ KEYCLOAK_CLIENT_SECRET = get_parameter('/keycloak/nhub/client_secret', with_decr
 
 def lambda_handler(event, context):
     # print("Event received:", event)  # Log do evento recebido
-
 
     try:
         body = json.loads(event.get("body", "{}"))
@@ -54,10 +47,23 @@ def lambda_handler(event, context):
 
     # print("Access token refreshed from Keycloak:", token_data)  # Log do token de acesso renovado
 
+    # Mudar a estrutura da resposta para manter o padrão do Cognito
+    cognito_compatible_response = {
+        'AccessToken': token_data.get('access_token'),
+        'ExpiresIn': token_data.get('expires_in'),
+        'RefreshExpiresIn': token_data.get('refresh_expires_in'),
+        'RefreshToken': token_data.get('refresh_token'),
+        'TokenType': token_data.get('token_type'),
+        'IdToken': token_data.get('id_token'),       
+        'NotBeforePolicy': token_data.get('not-before-policy'),       
+        'SessionState': token_data.get('session_state'),       
+        'Scope': token_data.get('scope')               
+    }    
+
     # Retorna a resposta com o token de acesso renovado
     return {
         'statusCode': 200,
-        'body': json.dumps(token_data)
+        'body': json.dumps(cognito_compatible_response)
     }
 
 def get_keycloak_refresh_token(refresh_token):
